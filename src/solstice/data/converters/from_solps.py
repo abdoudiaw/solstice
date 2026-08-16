@@ -219,12 +219,14 @@ def read_case_inputs(run_dir: str) -> tuple[dict, dict]:
     """Scalar control parameters and status metadata from params.json."""
     meta = json.loads((Path(run_dir) / "params.json").read_text())
     p = meta.get("inputs", {})
+    core = p.get("core", {})
     inputs = {
         "pe_core": p.get("power", {}).get("Pe_W"),
         "pi_core": p.get("power", {}).get("Pi_W"),
-        # params.json labels this "core.density_m-3" but it is the core
-        # fueling parameter (D_core), not a density boundary condition
-        "core_fueling": p.get("core", {}).get("density_m-3"),
+        # canonical name is core_fueling (see data_schema.md). Legacy
+        # params.json mislabels it "core.density_m-3"; fixed metadata is
+        # expected to use "core.fueling" — both are accepted here.
+        "core_fueling": core.get("fueling", core.get("density_m-3")),
     }
     for gas, rec in p.get("gas_puffing", {}).get("targets", {}).items():
         inputs[f"puff_{gas}"] = rec.get("value")

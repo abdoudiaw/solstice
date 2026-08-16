@@ -60,7 +60,11 @@ case/
     # recomputed from predicted fields via solstice.physics.
   sources/     # per-cell named arrays (dim: cell)
     sp, sne, qe, qi, sm, dab2, dmb2, tab2, tmb2 (subset per case)
-  inputs/      # scalar control parameters, named, with units in attrs
+  inputs/      # scalar control parameters, named, with units in attrs.
+    # Canonical names (converters map source metadata onto these; when
+    # run metadata like params.json is regenerated, use these names
+    # directly): pe_core, pi_core [W]; core_fueling (legacy params.json
+    # key: core.density_m-3); puff_<gas> [atom/s]; dna, hci, hce [m^2/s]
   attrs:
     machine, topology ("structured" | "wide"), species list,
     solps_version, case_id, generation git hash, schema_version,

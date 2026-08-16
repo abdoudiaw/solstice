@@ -12,3 +12,4 @@
 # =========================================================================================
 # SPDX-License-Identifier: Apache-2.0
 from solstice.inference.checkpoint import load_checkpoint, save_checkpoint  # noqa: F401
+from solstice.inference.profile import profile  # noqa: F401

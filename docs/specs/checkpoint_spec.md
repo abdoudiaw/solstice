@@ -31,7 +31,13 @@ reconstruct the network and predict — no training code, no training data.
     "machine": "diiid", "regime": "lmode",
     "dataset": "diiid-lmode-d1", "schema_version": "0",
     "code_git": "<hash>", "metrics": { ... },
-    "parent": "diiid-lmode-sources-gnn-v1"   // warm-start lineage; null if from scratch
+    "parent": "diiid-lmode-sources-gnn-v1",  // warm-start lineage; null if from scratch
+    "cost": {                                 // solstice.inference.profile output
+      "n_params": 0, "weights_mb": 0.0,
+      "device": "cuda", "batch": 1,
+      "latency_ms_median": 0.0, "latency_ms_p95": 0.0,
+      "throughput_per_s": 0.0
+    }
   },
   "license": "CC-BY-4.0"
 }

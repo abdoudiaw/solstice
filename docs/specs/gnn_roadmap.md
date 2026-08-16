@@ -57,6 +57,35 @@ geometry) dominates, so the credible claim is few-shot fine-tuning on a
 small target-machine dataset. That matches the REACT transfer-learning
 plan.
 
+## Lessons from SOLPS-NN (Dasbach: NME 2023, thesis, SPARC PSI 2026)
+
+Adopted from the most directly comparable prior work:
+
+- **Predict derived fields directly.** Heat fluxes and radiated power
+  are network outputs alongside the state fields (SPARC SOLPS-NN
+  predicts 195 2D fields), not recomputed from predicted state.
+  Scalar QoIs (lambda_q, peak target flux, bolometer integrals) are
+  post-processed from predicted fields (`solps_nn.physics`).
+- **Location-dependent, non-linear normalization.** Target-region
+  temperatures span ~10 orders of magnitude; per-cell quantile
+  transforms (Dasbach 2023) or equivalent are required. Plain global
+  mean/std normalization is known to fail at the targets.
+- **Target-weighted evaluation and loss.** Standard eval report must
+  include 1D target profiles (test vs prediction via face sets) and
+  target-region metrics, not just full-2D averages; optional loss
+  weighting near targets.
+- **Physics-consistency metrics.** Power balance of predicted fields
+  vs Psep input; particle balance. Reported per released model.
+- **Hyperparameter search is not optional** — worst/best spread in a
+  search is ~10x error (thesis 8.3/8.5); a large well-tuned MLP
+  matches target-only models on full 2D fields, so the MLP stays a
+  serious benchmark, not a strawman.
+- **Dataset QC as metadata.** Convergence classification per case
+  (steady / oscillating / diverged) stored in case attrs and used to
+  filter training sets.
+- Cross-machine benchmark target: Dasbach's JET-geometry models and
+  dataset (github.com/sdasbach/solps-nn).
+
 ## Order of work
 
 1. Port current conditional GNN as `gnn_v1` (baseline, reproduces the

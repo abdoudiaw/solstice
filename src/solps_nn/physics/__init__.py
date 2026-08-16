@@ -10,16 +10,11 @@
 # public access to these results in accordance with the DOE Public Access Plan
 # (http://energy.gov/downloads/doe-public-access-plan).
 # =========================================================================================
-# State model (control params -> plasma), GNN baseline.
-task: state
-model:
-  class: gnn_v1
-  config:
-    hidden_dim: 128
-    num_layers: 6
-variables:
-  inputs: []           # machine control parameters, per dataset
-  # heat flux / radiation are first-class optional outputs (derived
-  # group in the schema); scalar QoIs come from solps_nn.physics.
-  outputs: [te, ti, ne, ua]
-  # e.g. extended: [te, ti, ne, ua, fhe_x, fhi_x, rqrad_tot]
+# SPDX-License-Identifier: Apache-2.0
+"""Deterministic post-processing of predicted fields into scalar QoIs and
+consistency checks — never separate models (docs/specs/data_schema.md).
+
+Planned: target 1D profiles (via face sets), peak target heat flux,
+lambda_q (Eich fit), Psol, power-balance and particle-balance residuals
+as standard evaluation metrics.
+"""

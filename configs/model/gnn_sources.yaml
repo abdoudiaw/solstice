@@ -18,5 +18,6 @@ model:
     hidden_dim: 128
     num_layers: 6
 variables:
-  inputs: [te, ti, ne, ni, ua]
+  # per-species density/velocity use suffix naming (na_D1, ua_D1, ...)
+  inputs: [te, ti, ne, na_D1, ua_D1]
   outputs: [sp, sne, qe, qi, sm]

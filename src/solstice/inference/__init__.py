@@ -11,4 +11,4 @@
 # (http://energy.gov/downloads/doe-public-access-plan).
 # =========================================================================================
 # SPDX-License-Identifier: Apache-2.0
-from solps_nn.graphs.build import cell_adjacency_edges  # noqa: F401
+from solstice.inference.checkpoint import load_checkpoint, save_checkpoint  # noqa: F401

@@ -15,9 +15,9 @@ import numpy as np
 import pytest
 import xarray as xr
 
-import solps_nn
-from solps_nn.graphs import cell_adjacency_edges
-from solps_nn.models import register_model, build_model
+import solstice
+from solstice.graphs import cell_adjacency_edges
+from solstice.models import register_model, build_model
 
 
 def test_registry_roundtrip():

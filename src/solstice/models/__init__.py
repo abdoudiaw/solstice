@@ -11,4 +11,5 @@
 # (http://energy.gov/downloads/doe-public-access-plan).
 # =========================================================================================
 # SPDX-License-Identifier: Apache-2.0
-from solps_nn.inference.checkpoint import load_checkpoint, save_checkpoint  # noqa: F401
+from solstice.models.base import ModelInterface, SourceModel, StateModel  # noqa: F401
+from solstice.models.registry import build_model, get_model, register_model  # noqa: F401

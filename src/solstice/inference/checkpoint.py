@@ -15,7 +15,7 @@
 """Checkpoint bundles. Format: docs/specs/checkpoint_spec.md.
 
 A bundle directory must be loadable in a clean environment with just
-solps-nn installed: bundle.json + weights.safetensors +
+solstice-fusion installed: bundle.json + weights.safetensors +
 normalization.json + mesh.nc + model_card.md.
 """
 
@@ -32,9 +32,9 @@ def load_checkpoint(path: str):
     import torch
     from safetensors.torch import load_file
 
-    from solps_nn.data.schema import load_case
-    from solps_nn.models.base import Normalizer, SourceModel, StateModel
-    from solps_nn.models.registry import build_model
+    from solstice.data.schema import load_case
+    from solstice.models.base import Normalizer, SourceModel, StateModel
+    from solstice.models.registry import build_model
 
     path = Path(path)
     manifest = json.loads((path / "bundle.json").read_text())

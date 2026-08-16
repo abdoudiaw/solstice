@@ -10,6 +10,25 @@
 # public access to these results in accordance with the DOE Public Access Plan
 # (http://energy.gov/downloads/doe-public-access-plan).
 # =========================================================================================
+# Authors: Abdourahmane (Abdou) Diaw - diawa@ornl.gov
 # SPDX-License-Identifier: Apache-2.0
-from solps_nn.models.base import ModelInterface, SourceModel, StateModel  # noqa: F401
-from solps_nn.models.registry import build_model, get_model, register_model  # noqa: F401
+"""Named released weights. Names follow the checkpoint spec:
+{machine}-{regime}-{task}-{arch}[-mini]-v{N}."""
+
+from __future__ import annotations
+
+# name -> huggingface repo id (populated at first release)
+RELEASES: dict[str, str] = {}
+
+
+def load(name: str):
+    """Download a released bundle by name and return a ready ModelInterface."""
+    from solstice.inference import load_checkpoint
+
+    try:
+        repo_id = RELEASES[name]
+    except KeyError:
+        raise KeyError(f"unknown release {name!r}; available: {sorted(RELEASES)}") from None
+    from huggingface_hub import snapshot_download
+
+    return load_checkpoint(snapshot_download(repo_id))

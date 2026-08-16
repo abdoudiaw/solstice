@@ -1,6 +1,8 @@
-# solps-nn
+# SOLSTICE
 
-Neural-network surrogates for SOLPS-ITER edge plasmas.
+**S**crape-**O**ff **L**ayer **S**urrogate **T**raining, **I**nference & **C**oupling **E**cosystem — neural-network surrogates for SOLPS-ITER edge plasmas.
+
+Install: `pip install solstice-fusion` (import name: `solstice`).
 
 Two model tasks, one framework:
 
@@ -19,9 +21,9 @@ training data.
 ## Quick start
 
 ```python
-import solps_nn
+import solstice
 
-model = solps_nn.zoo.load("diiid-lmode-sources-gnn-v1")
+model = solstice.zoo.load("diiid-lmode-sources-gnn-v1")
 sources = model.predict(plasma_state)
 ```
 
@@ -30,7 +32,7 @@ See `examples/quickstart.ipynb` (runs on Colab).
 ## Repository layout
 
 ```
-src/solps_nn/
+src/solstice/
   data/        canonical dataset schema + converters (SOLPS output -> canonical)
   graphs/      mesh -> graph construction (edges are derived, never stored)
   models/      registry + architectures (gnn/, unet/, mlp/)
@@ -59,7 +61,7 @@ docs/specs/    data schema, checkpoint bundle, GNN roadmap — the contracts
 ## Data
 
 Training data comes from SOLPS-ITER simulations and is **not** distributed
-with this repository. Converters in `solps_nn.data.converters` build
+with this repository. Converters in `solstice.data.converters` build
 canonical cases from SOLPS run directories.
 
 ## License

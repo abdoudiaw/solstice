@@ -3,7 +3,7 @@ requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "solps-nn"
+name = "solstice-fusion"
 version = "0.0.1"
 description = "Neural-network surrogates for SOLPS-ITER edge plasmas"
 authors = [{ name = "Abdourahmane Diaw", email = "diawa@ornl.gov" }]

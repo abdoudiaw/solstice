@@ -20,6 +20,6 @@ model:
 variables:
   inputs: []           # machine control parameters, per dataset
   # heat flux / radiation are first-class optional outputs (derived
-  # group in the schema); scalar QoIs come from solps_nn.physics.
+  # group in the schema); scalar QoIs come from solstice.physics.
   outputs: [te, ti, ne, ua]
   # e.g. extended: [te, ti, ne, ua, fhe_x, fhi_x, rqrad_tot]

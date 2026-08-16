@@ -1,7 +1,7 @@
 # Canonical data schema (v0)
 
 The contract between SOLPS output, training stores, and model loaders.
-Everything in `solps_nn.data` serves this document.
+Everything in `solstice.data` serves this document.
 
 ## Principles
 
@@ -45,13 +45,19 @@ case/
     te [eV], ti [eV], ne [m^-3], ua [m/s], ...
     # per-species variables use suffix naming: na_D0, na_D1, na_N3,
     # ua_D1, ... (species tag = element + charge state)
-  derived/     # per-cell arrays post-processed by SOLPS from the state:
+  derived/     # post-processed by SOLPS from the state.
+    # Per-boundary-face arrays (dim: face, valid on target face sets):
+    # deposited heat flux [W/m^2] and particle flux — the 1D target
+    # load profiles. Kept in every dataset and learned as auxiliary
+    # outputs (see gnn_roadmap.md), also the ground truth for target
+    # evaluation metrics.
+    # Per-cell arrays:
     # heat flux components (fhe*, fhi*), radiated power density
     # (rqrad_*, rqbrm_*), neutral pressure, ... Same naming rules.
     # Flagged derived because they are second-order: models may output
-    # them directly (recommended, SOLPS-NN/SPARC practice — enables
+    # them directly (recommended, prior SPARC surrogate practice — enables
     # power-balance checks and denoises MC noise) or they can be
-    # recomputed from predicted fields via solps_nn.physics.
+    # recomputed from predicted fields via solstice.physics.
   sources/     # per-cell named arrays (dim: cell)
     sp, sne, qe, qi, sm, dab2, dmb2, tab2, tmb2 (subset per case)
   inputs/      # scalar control parameters, named, with units in attrs
@@ -59,7 +65,7 @@ case/
     machine, topology ("structured" | "wide"), species list,
     solps_version, case_id, generation git hash, schema_version,
     convergence_status ("steady" | "oscillating" | "diverged" |
-    "unclassified", Dasbach 2023 criteria)
+    "unclassified")
 ```
 
 ## Scalar quantities of interest
@@ -67,7 +73,7 @@ case/
 Scalar QoIs (peak target heat flux, lambda_q, Psol, power balance,
 bolometer-like integrals) are never stored as primary data and never
 get their own schema group: they are computed from fields/derived by
-`solps_nn.physics` at evaluation time. Power balance between predicted
+`solstice.physics` at evaluation time. Power balance between predicted
 fields and the Psep input is a standard physics-consistency metric for
 every released model.
 

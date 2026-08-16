@@ -38,9 +38,9 @@ reconstruct the network and predict — no training code, no training data.
 
 ## Rules
 
-- `model.class` resolves through `solps_nn.models.registry` only.
-- Loading = `solps_nn.inference.load_checkpoint(path)`; it must succeed
-  in a clean environment with just `solps-nn` installed.
+- `model.class` resolves through `solstice.models.registry` only.
+- Loading = `solstice.inference.load_checkpoint(path)`; it must succeed
+  in a clean environment with just `solstice-fusion` installed.
 - Names: `{machine}-{regime}-{task}-{arch}[-mini]-v{N}`; the training
   dataset version goes in provenance and, once several generations
   exist, into the name (e.g. `-d2`).

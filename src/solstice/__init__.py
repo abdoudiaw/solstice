@@ -10,5 +10,10 @@
 # public access to these results in accordance with the DOE Public Access Plan
 # (http://energy.gov/downloads/doe-public-access-plan).
 # =========================================================================================
+# Authors: Abdourahmane (Abdou) Diaw - diawa@ornl.gov
 # SPDX-License-Identifier: Apache-2.0
-from solps_nn.data.schema import load_case, new_case, save_case, validate_case  # noqa: F401
+"""Neural-network surrogates for SOLPS-ITER edge plasmas."""
+
+__version__ = "0.0.1"
+
+from solstice import data, graphs, inference, models, zoo  # noqa: F401

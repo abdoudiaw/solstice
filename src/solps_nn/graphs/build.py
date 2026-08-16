@@ -1,0 +1,27 @@
+# Authors: Abdourahmane (Abdou) Diaw - diawa@ornl.gov
+# SPDX-License-Identifier: Apache-2.0
+"""Mesh -> graph construction. Edges are cell pairs sharing a face,
+which works identically on structured and GOAT wide grids
+(docs/specs/data_schema.md)."""
+
+from __future__ import annotations
+
+import numpy as np
+import xarray as xr
+
+
+def cell_adjacency_edges(case: xr.Dataset) -> tuple[np.ndarray, np.ndarray]:
+    """Undirected edge list (2, E) from face adjacency, plus per-edge
+    geometry features (dR, dZ, dist) from cell centres."""
+    face_cells = np.asarray(case["face_cells"].values, dtype=np.int64)
+    interior = (face_cells >= 0).all(axis=1)
+    a, b = face_cells[interior, 0], face_cells[interior, 1]
+    edge_index = np.concatenate(
+        [np.stack([a, b]), np.stack([b, a])], axis=1
+    )
+    r = np.asarray(case["cell_r"].values)
+    z = np.asarray(case["cell_z"].values)
+    dr = r[edge_index[1]] - r[edge_index[0]]
+    dz = z[edge_index[1]] - z[edge_index[0]]
+    edge_attr = np.stack([dr, dz, np.hypot(dr, dz)], axis=1)
+    return edge_index, edge_attr

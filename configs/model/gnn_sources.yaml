@@ -1,0 +1,10 @@
+# Source model (plasma -> sources), GNN baseline.
+task: sources
+model:
+  class: gnn_v1        # registry name
+  config:
+    hidden_dim: 128
+    num_layers: 6
+variables:
+  inputs: [te, ti, ne, ni, ua]
+  outputs: [sp, sne, qe, qi, sm]

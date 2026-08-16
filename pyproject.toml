@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "solps-nn"
+version = "0.0.1"
+description = "Neural-network surrogates for SOLPS-ITER edge plasmas"
+authors = [{ name = "Abdourahmane Diaw", email = "diawa@ornl.gov" }]
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "xarray",
+    "netcdf4",
+    "pyyaml",
+    "safetensors",
+]
+
+[project.optional-dependencies]
+models = ["torch>=2.2", "torch_geometric"]
+zarr = ["zarr"]
+zoo = ["huggingface_hub"]
+# SOLPS raw-file converters additionally require the ORNL SOLPS-routines
+# package (solps_routines) on the python path.
+dev = ["pytest", "ruff"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100

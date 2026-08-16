@@ -1,0 +1,10 @@
+# State model (control params -> plasma), GNN baseline.
+task: state
+model:
+  class: gnn_v1
+  config:
+    hidden_dim: 128
+    num_layers: 6
+variables:
+  inputs: []           # machine control parameters, per dataset
+  outputs: [te, ti, ne, ua]

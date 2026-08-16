@@ -221,8 +221,8 @@ def read_case_inputs(run_dir: str) -> tuple[dict, dict]:
     p = meta.get("inputs", {})
     core = p.get("core", {})
     inputs = {
-        "pe_core": p.get("power", {}).get("Pe_W"),
-        "pi_core": p.get("power", {}).get("Pi_W"),
+        "pe": p.get("power", {}).get("Pe_W"),
+        "pi": p.get("power", {}).get("Pi_W"),
         # canonical name is core_fueling (see data_schema.md). Legacy
         # params.json mislabels it "core.density_m-3"; fixed metadata is
         # expected to use "core.fueling" — both are accepted here.

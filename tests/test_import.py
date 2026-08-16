@@ -43,3 +43,46 @@ def test_cell_adjacency_edges():
     edge_index, edge_attr = cell_adjacency_edges(case)
     assert edge_index.shape == (2, 2)  # undirected -> both directions
     assert np.allclose(edge_attr[:, 2], 1.0)
+
+
+def _tiny_geo(nx=3, ny=2):
+    # regular grid, cell (ix, iy) spans [ix-.5, ix+.5] x [iy-.5, iy+.5]
+    crx = np.zeros((nx + 2, ny + 2, 4))
+    cry = np.zeros((nx + 2, ny + 2, 4))
+    for ix in range(nx + 2):
+        for iy in range(ny + 2):
+            crx[ix, iy] = [ix - 0.5, ix + 0.5, ix - 0.5, ix + 0.5]
+            cry[ix, iy] = [iy - 0.5, iy - 0.5, iy + 0.5, iy + 0.5]
+    ixg, iyg = np.meshgrid(np.arange(nx + 2), np.arange(ny + 2), indexing="ij")
+    region = np.zeros((nx + 2, ny + 2, 3), dtype=int)
+    region[:, :, 0] = 2  # all SOL
+    return {
+        "nx": nx, "ny": ny, "crx": crx, "cry": cry,
+        "vol": np.ones((nx + 2, ny + 2)),
+        "bb": np.ones((nx + 2, ny + 2, 4)),
+        "leftix_py": ixg - 1, "leftiy_py": iyg,
+        "bottomix_py": ixg, "bottomiy_py": iyg - 1,
+        "region": region,
+        "region_ids": {"vol": {"is_core": 1, "sol": 2}},
+    }
+
+
+def test_structured_mesh_builder():
+    from solstice.data.converters.from_solps import FACE_SETS, build_structured_mesh
+
+    mesh = build_structured_mesh(_tiny_geo())
+    assert mesh.sizes["cell"] == 6
+    assert mesh.sizes["vertex"] == 12
+    assert mesh.sizes["face"] == 17  # (nx+1)*ny + nx*(ny+1)
+    fc = mesh["face_cells"].values
+    assert (fc[:, 1] >= 0).sum() == 7 and (fc[:, 1] < 0).sum() == 10
+    fs = mesh["face_set"].values
+    assert (fs == FACE_SETS["inner_target"]).sum() == 2   # west, smaller R
+    assert (fs == FACE_SETS["outer_target"]).sum() == 2
+    assert (fs == FACE_SETS["pfr_boundary"]).sum() == 3   # south, non-core
+    assert (fs == FACE_SETS["wall"]).sum() == 3
+    # every interior face joins cells whose centres are one unit apart
+    r, z = mesh["cell_r"].values, mesh["cell_z"].values
+    a, b = fc[fc[:, 1] >= 0, 0], fc[fc[:, 1] >= 0, 1]
+    d = np.hypot(r[a] - r[b], z[a] - z[b])
+    assert np.allclose(d, 1.0)

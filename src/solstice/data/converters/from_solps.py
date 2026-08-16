@@ -222,7 +222,9 @@ def read_case_inputs(run_dir: str) -> tuple[dict, dict]:
     inputs = {
         "pe_core": p.get("power", {}).get("Pe_W"),
         "pi_core": p.get("power", {}).get("Pi_W"),
-        "n_core": p.get("core", {}).get("density_m-3"),
+        # params.json labels this "core.density_m-3" but it is the core
+        # fueling parameter (D_core), not a density boundary condition
+        "core_fueling": p.get("core", {}).get("density_m-3"),
     }
     for gas, rec in p.get("gas_puffing", {}).get("targets", {}).items():
         inputs[f"puff_{gas}"] = rec.get("value")

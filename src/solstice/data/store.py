@@ -36,31 +36,27 @@ import xarray as xr
 from solstice.data.converters import from_solps
 
 
-# physics QC thresholds (solpex-paper dataset sanity check, paper workflow 1)
-QC_TE_MAX_MIN_EV = 20.0     # unconverged / dead run
-QC_TE_MAX_MAX_EV = 5000.0   # core blow-up
-QC_NE_MAX_MIN_M3 = 1.0e17
 QC_MAX_NAN_FRAC = 0.02
 
 
 def qc_flags(field_names: list[str], fields_arr: np.ndarray) -> dict:
-    """Per-case QC columns from the stacked (case, var, cell) field array."""
+    """Per-case QC columns from the stacked (case, var, cell) field array.
+
+    qc_pass is data integrity only (finite values). qc_max_te/qc_max_ne
+    are diagnostics for users to threshold consciously — no physics
+    cut is applied here (local Te well below 1 eV is real detached
+    physics, and domain-max thresholds are dataset-dependent).
+    """
     i_te, i_ne = field_names.index("te"), field_names.index("ne")
     with np.errstate(invalid="ignore"):
         max_te = np.nanmax(fields_arr[:, i_te, :], axis=1)
         max_ne = np.nanmax(fields_arr[:, i_ne, :], axis=1)
     nan_frac = (~np.isfinite(fields_arr)).mean(axis=(1, 2))
-    qc_pass = (
-        (max_te >= QC_TE_MAX_MIN_EV)
-        & (max_te <= QC_TE_MAX_MAX_EV)
-        & (max_ne >= QC_NE_MAX_MIN_M3)
-        & (nan_frac <= QC_MAX_NAN_FRAC)
-    )
     return {
         "qc_max_te": max_te,
         "qc_max_ne": max_ne,
         "qc_nan_frac": nan_frac,
-        "qc_pass": qc_pass,
+        "qc_pass": nan_frac <= QC_MAX_NAN_FRAC,
     }
 
 

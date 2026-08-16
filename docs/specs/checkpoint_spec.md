@@ -30,7 +30,8 @@ reconstruct the network and predict — no training code, no training data.
   "provenance": {
     "machine": "diiid", "regime": "lmode",
     "dataset": "diiid-lmode-d1", "schema_version": "0",
-    "code_git": "<hash>", "metrics": { ... }
+    "code_git": "<hash>", "metrics": { ... },
+    "parent": "diiid-lmode-sources-gnn-v1"   // warm-start lineage; null if from scratch
   },
   "license": "CC-BY-4.0"
 }
@@ -45,5 +46,14 @@ reconstruct the network and predict — no training code, no training data.
   dataset version goes in provenance and, once several generations
   exist, into the name (e.g. `-d2`).
 - Bundles are immutable; a change of weights is a new `v{N}`.
+- **Bundles are valid training inits, not just inference artifacts.**
+  `load_checkpoint(path).core` is an ordinary torch module: fine-tune it
+  on new data (transfer learning, e.g. DIII-D -> KSTAR warm start),
+  continue training on an extended dataset, or use the loaded model as
+  a frozen teacher for distillation into a smaller/`-mini` student.
+  Every model trained from a bundle records it in `provenance.parent`,
+  so lineage chains (pretrain -> fine-tune -> distill) stay auditable.
+  Optimizer/scheduler state is deliberately NOT in bundles — mid-run
+  resume uses ordinary training checkpoints, which are never released.
 - Format changes bump `bundle_version` with a migration note here
   (anemoi-style checkpoint migrations).

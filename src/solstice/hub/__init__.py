@@ -12,7 +12,7 @@
 # =========================================================================================
 # Authors: Abdourahmane (Abdou) Diaw - diawa@ornl.gov
 # SPDX-License-Identifier: Apache-2.0
-"""Named released weights. Names follow the checkpoint spec:
+"""Named released weights, torch.hub-style. Names follow the checkpoint spec:
 {machine}-{regime}-{task}-{arch}[-mini]-v{N}."""
 
 from __future__ import annotations

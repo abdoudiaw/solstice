@@ -16,4 +16,4 @@
 
 __version__ = "0.0.1"
 
-from solstice import data, graphs, inference, models, zoo  # noqa: F401
+from solstice import data, graphs, inference, models, hub  # noqa: F401

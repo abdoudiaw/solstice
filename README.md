@@ -23,7 +23,7 @@ training data.
 ```python
 import solstice
 
-model = solstice.zoo.load("diiid-lmode-sources-gnn-v1")
+model = solstice.hub.load("diiid-lmode-sources-gnn-v1")
 sources = model.predict(plasma_state)
 ```
 
@@ -39,7 +39,7 @@ src/solstice/
   training/    trainer, losses, normalization (users never need this)
   inference/   checkpoint bundles, ModelInterface — the user-facing API
   coupling/    B2.5/EIRENE socket server, C/Fortran shims
-  zoo/         named-weight download
+  hub/         named-weight download (torch.hub-style)
 configs/       YAML model/training configs
 docs/specs/    data schema, checkpoint bundle, GNN roadmap — the contracts
 ```

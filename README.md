@@ -32,10 +32,8 @@ terms = sources.predict(plasma_state, params)
 ```
 
 Runnable versions: `examples/predict_state.py` and
-`examples/predict_sources.py`; training notebooks (Colab):
-`examples/train_state.ipynb` and `examples/train_sources.ipynb`.
-Requests outside the training parameter box raise a warning
-(ensemble-based uncertainty estimates are planned).
+`examples/predict_sources.py`. Requests outside the training parameter
+box raise a warning (ensemble-based uncertainty estimates are planned).
 
 ## Released models
 
@@ -56,7 +54,7 @@ src/solstice/
   physics/     scalar QoIs from predicted fields
 configs/       YAML model configs
 docs/specs/    data schema, checkpoint bundle, GNN roadmap — the contracts
-examples/      predict scripts + Colab training notebooks
+examples/      predict scripts for released models
 ```
 
 ## Design principles

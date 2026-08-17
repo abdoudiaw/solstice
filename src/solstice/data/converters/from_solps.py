@@ -63,7 +63,7 @@ def _readers():
     except ImportError as err:
         raise ImportError(
             "solps_routines is required for SOLPS conversion — the SOLPS-routines "
-            "package by Jeremy Lore (ORNL); add its src/ to PYTHONPATH"
+            "by Jeremy Lore (ORNL); add its src/ to PYTHONPATH"
         ) from err
     return readers
 

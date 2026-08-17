@@ -10,16 +10,19 @@
 # public access to these results in accordance with the DOE Public Access Plan
 # (http://energy.gov/downloads/doe-public-access-plan).
 # =========================================================================================
-# State model (control params -> plasma), conditional GNN baseline (solpex-paper port).
+# State model, encode-process-decode GNN with latent mesh (docs/specs/gnn_roadmap.md).
 task: state
 model:
-  class: gnn_v1
+  class: gnn_encproc
   config:
-    node_features: 2      # [psi_n_approx, |B|] (solstice.graphs.default_node_features)
-    param_dim: 5          # engineered inputs: ptot, core_fueling, puff_D2, dna, chi
-    out_features: 4       # te, ti, ne, ua_D1
+    node_features: 2
+    param_dim: 5
+    out_features: 4
     hidden: 128
-    n_layers: 6
+    n_process_layers: 8
+graph:
+  n_latent: 256           # solstice.graphs.build_latent_graph
+  k_nn: 6
 variables:
   inputs: [ptot, core_fueling, puff_D2, dna, chi]
   outputs: [te, ti, ne, ua_D1]

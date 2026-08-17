@@ -11,4 +11,5 @@
 # (http://energy.gov/downloads/doe-public-access-plan).
 # =========================================================================================
 # SPDX-License-Identifier: Apache-2.0
-from solstice.graphs.build import cell_adjacency_edges  # noqa: F401
+from solstice.graphs.build import cell_adjacency_edges, default_node_features  # noqa: F401
+from solstice.graphs.latent import build_latent_graph  # noqa: F401

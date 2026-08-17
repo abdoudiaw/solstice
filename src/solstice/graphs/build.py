@@ -22,6 +22,20 @@ import numpy as np
 import xarray as xr
 
 
+def default_node_features(case: xr.Dataset) -> np.ndarray:
+    """Per-cell geometry features [psi_n_approx, |B|] (solpex-paper convention).
+
+    psi_n_approx is the normalised radius from the cell-cloud centroid —
+    the same approximation the solpex-paper GNN used; replace with true
+    psi_n when the mesh carries it."""
+    r = np.asarray(case["cell_r"].values)
+    z = np.asarray(case["cell_z"].values)
+    rho = np.hypot(r - r.mean(), z - z.mean())
+    psi_n = rho / rho.max() if rho.max() > 0 else np.zeros_like(rho)
+    bmag = np.asarray(case["cell_b"].values)[:, 3]
+    return np.stack([psi_n, bmag], axis=1).astype(np.float32)
+
+
 def cell_adjacency_edges(case: xr.Dataset) -> tuple[np.ndarray, np.ndarray]:
     """Undirected edge list (2, E) from face adjacency, plus per-edge
     geometry features (dR, dZ, dist) from cell centres."""

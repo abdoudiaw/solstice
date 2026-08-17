@@ -31,6 +31,9 @@ def register_model(name: str):
 
 
 def get_model(name: str) -> type:
+    if name not in _REGISTRY and name.startswith("gnn"):
+        # GNNs register on import and need torch_geometric
+        import solstice.models.gnn  # noqa: F401
     try:
         return _REGISTRY[name]
     except KeyError:

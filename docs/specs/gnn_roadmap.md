@@ -92,7 +92,16 @@ Adopted from the most directly comparable prior work:
   (steady / oscillating / diverged) stored in case attrs and used to
   filter training sets.
 
-## Order of work
+## Status
+
+gnn_v1 (native-mesh baseline) served its purpose and was removed from
+the codebase (history has it); "gnn" (encode-process-decode) is the
+released architecture with FiLM conditioning and target-weighted loss.
+Remaining: processor variants, flux-aligned edges, FGN-style
+noise/CRPS ensembles (also the planned uncertainty estimate for
+out-of-distribution requests), na_D0 normalization fix.
+
+## Original order of work
 
 1. Port current conditional GNN as `gnn_v1` (baseline, reproduces the
    paper).

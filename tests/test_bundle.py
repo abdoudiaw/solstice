@@ -52,9 +52,9 @@ def test_gnn_bundle_roundtrip(tmp_path, tiny_mesh):
     mesh_path, n_cells = tiny_mesh
     cfg = {"node_features": 2, "param_dim": 5, "out_features": 2,
            "hidden": 8, "n_process_layers": 2}
-    core = build_model("gnn_encproc", cfg)
+    core = build_model("gnn", cfg)
     pt = {
-        "state_dict": core.state_dict(), "model_class": "gnn_encproc", "config": cfg,
+        "state_dict": core.state_dict(), "model_class": "gnn", "config": cfg,
         "fields": {"te": True, "ua_D1": False},
         "inputs": ["chi", "core_fueling", "dna", "ptot", "puff_D2"],
         "x_mean": np.zeros(5), "x_std": np.ones(5),
@@ -82,10 +82,10 @@ def test_source_bundle_roundtrip(tmp_path, tiny_mesh):
     mesh_path, n_cells = tiny_mesh
     plasma = {"te": True, "ne": True, "ua_D1": False}
     cfg = {"node_features": 2 + len(plasma), "param_dim": 5, "out_features": 5,
-           "hidden": 8, "n_layers": 2}
-    core = build_model("gnn_v1", cfg)
+           "hidden": 8, "n_process_layers": 2}
+    core = build_model("gnn", cfg)
     pt = {
-        "state_dict": core.state_dict(), "model_class": "gnn_v1", "config": cfg,
+        "state_dict": core.state_dict(), "model_class": "gnn", "config": cfg,
         "task": "sources", "plasma_features": plasma,
         "sources": ["sp", "sne", "qe", "qi", "sm"],
         "use_params": True,
@@ -96,6 +96,7 @@ def test_source_bundle_roundtrip(tmp_path, tiny_mesh):
         "pf_mean": {"te": 1.5, "ne": 19.5, "ua_D1": 0.0},
         "pf_std": {"te": 0.5, "ne": 0.5, "ua_D1": 5e3},
         "y_mean": np.zeros((n_cells, 5)), "y_std": np.ones((n_cells, 5)),
+        "n_latent": 3,
     }
     ptp = tmp_path / "diiid-test-sources-gnn.pt"
     torch.save(pt, ptp)

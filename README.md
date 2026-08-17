@@ -32,19 +32,17 @@ terms = sources.predict(plasma_state, params)
 ```
 
 Runnable versions: `examples/predict_state.py` and
-`examples/predict_sources.py`. Training notebooks (Colab):
-`examples/quickstart_diiid_state_gnn.ipynb` (state task) and
-`examples/quickstart_diiid_sources_gnn.ipynb` (sources / EIRENE
-replacement); `examples/quickstart_diiid_state.ipynb` is the MLP
-baseline. Requests outside the training parameter box raise a warning
+`examples/predict_sources.py`; training notebooks (Colab):
+`examples/train_state.ipynb` and `examples/train_sources.ipynb`.
+Requests outside the training parameter box raise a warning
 (ensemble-based uncertainty estimates are planned).
 
 ## Released models
 
 Names follow `pepc-{machine}-{task}-v{N}` (PEPC: ORNL Power Exhaust and
-Particle Control group). Current architecture: `gnn` — latent-mesh
-encode-process-decode with FiLM conditioning (`mlp_v1` is the baseline;
-`gnn_v1`, the native-mesh conditional GNN, is retired but loadable).
+Particle Control group). Architecture: `gnn` — latent-mesh
+encode-process-decode with FiLM conditioning (`mlp_v1` is the
+per-field baseline).
 
 ## Repository layout
 
@@ -52,13 +50,13 @@ encode-process-decode with FiLM conditioning (`mlp_v1` is the baseline;
 src/solstice/
   data/        canonical dataset schema + converters (SOLPS output -> canonical)
   graphs/      mesh -> graph construction (edges are derived, never stored)
-  models/      registry + architectures (gnn/, unet/, mlp/)
-  training/    trainer, losses, normalization (users never need this)
-  inference/   checkpoint bundles, ModelInterface — the user-facing API
-  coupling/    B2.5/EIRENE socket server, C/Fortran shims
-  hub/         named-weight download (torch.hub-style)
-configs/       YAML model/training configs
+  models/      registry + architectures (gnn, mlp baseline)
+  inference/   checkpoint loading, profiling
+  hub/         released-model bundles: create / load / predict
+  physics/     scalar QoIs from predicted fields
+configs/       YAML model configs
 docs/specs/    data schema, checkpoint bundle, GNN roadmap — the contracts
+examples/      predict scripts + Colab training notebooks
 ```
 
 ## Design principles

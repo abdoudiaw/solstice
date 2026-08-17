@@ -33,6 +33,9 @@ def load_checkpoint(path: str):
     if manifest.get("task") == "state":
         from solstice.hub.bundle import load_state_bundle
         return load_state_bundle(path)
+    if manifest.get("task") == "sources":
+        from solstice.hub.bundle import load_source_bundle
+        return load_source_bundle(path)
     return _load_generic(path)
 
 

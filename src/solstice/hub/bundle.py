@@ -156,28 +156,22 @@ class StatePredictor:
             self._graph = self._build_graph(torch)
 
     def _build_graph(self, torch):
-        from solstice.graphs import (build_latent_graph, cell_adjacency_edges,
-                                     default_node_features)
+        from solstice.graphs import build_latent_graph, default_node_features
         x = torch.tensor(default_node_features(self.mesh))
         x = (x - x.mean(0)) / (x.std(0) + 1e-12)
         g = {"x": x}
-        if self.manifest["model"]["class"] == "gnn_encproc":
-            n_latent = int(self.manifest["n_latent"])
-            lg = build_latent_graph(self.mesh.cell_r.values, self.mesh.cell_z.values,
+        n_latent = int(self.manifest["n_latent"])
+        lg = build_latent_graph(self.mesh.cell_r.values, self.mesh.cell_z.values,
                                     n_latent=n_latent,
                                     k_nn=int(self.manifest.get("k_nn", 6)))
-            g["assign_index"] = torch.tensor(lg["assign_index"])
-            g["assign_attr"] = torch.tensor(
+        g["assign_index"] = torch.tensor(lg["assign_index"])
+        g["assign_attr"] = torch.tensor(
                 lg["assign_attr"] / (np.abs(lg["assign_attr"]).max(0) + 1e-12),
                 dtype=torch.float32)
-            g["latent_edges"] = torch.tensor(lg["latent_edges"])
-            g["latent_attr"] = torch.tensor(
+        g["latent_edges"] = torch.tensor(lg["latent_edges"])
+        g["latent_attr"] = torch.tensor(
                 lg["latent_attr"] / np.abs(lg["latent_attr"]).max(0), dtype=torch.float32)
-            g["n_latent"] = n_latent
-        else:
-            ei, ea = cell_adjacency_edges(self.mesh)
-            g["edge_index"] = torch.tensor(ei)
-            g["edge_attr"] = torch.tensor(ea / np.abs(ea).max(0), dtype=torch.float32)
+        g["n_latent"] = n_latent
         return g
 
     def predict(self, params: dict) -> dict:
@@ -190,18 +184,14 @@ class StatePredictor:
                               ranges=self.manifest.get("input_ranges"))
         xt = torch.tensor(xn, dtype=torch.float32)
         with torch.no_grad():
-            if self._graph is None:
+            if self._graph is None:  # mlp baseline
                 yn = self.core(xt[None])[0].numpy()[:, None]
             else:
                 g = self._graph
-                if "edge_index" in g:
-                    p = xt[None].expand(g["x"].shape[0], -1)
-                    yn = self.core(g["x"], g["edge_index"], g["edge_attr"], p).numpy()
-                else:
-                    pl = xt[None].expand(g["n_latent"], -1)
-                    yn = self.core(g["x"], g["assign_index"], g["assign_attr"],
-                                   g["latent_edges"], g["latent_attr"], pl,
-                                   g["n_latent"]).numpy()
+                pl = xt[None].expand(g["n_latent"], -1)
+                yn = self.core(g["x"], g["assign_index"], g["assign_attr"],
+                               g["latent_edges"], g["latent_attr"], pl,
+                               g["n_latent"]).numpy()
         y = yn * self.norm["y_std"] + self.norm["y_mean"]
         out = {}
         for j, (fname, is_log) in enumerate(self.fields.items()):
@@ -294,17 +284,15 @@ class SourcePredictor:
         self._graph = self._build_graph(torch)
 
     def _build_graph(self, torch):
-        from solstice.graphs import (build_latent_graph, cell_adjacency_edges,
-                                     default_node_features)
+        from solstice.graphs import build_latent_graph, default_node_features
         geom = default_node_features(self.mesh)
         geom = (geom - self.norm["geom_mean"]) / self.norm["geom_std"]
         g = {"geom": torch.tensor(geom, dtype=torch.float32)}
-        if self.manifest["model"]["class"] == "gnn_encproc":
-            n_latent = int(self.manifest["n_latent"])
-            lg = build_latent_graph(self.mesh.cell_r.values, self.mesh.cell_z.values,
+        n_latent = int(self.manifest["n_latent"])
+        lg = build_latent_graph(self.mesh.cell_r.values, self.mesh.cell_z.values,
                                     n_latent=n_latent,
                                     k_nn=int(self.manifest.get("k_nn", 6)))
-            g.update(
+        g.update(
                 assign_index=torch.tensor(lg["assign_index"]),
                 assign_attr=torch.tensor(
                     lg["assign_attr"] / (np.abs(lg["assign_attr"]).max(0) + 1e-12),
@@ -314,10 +302,6 @@ class SourcePredictor:
                     lg["latent_attr"] / np.abs(lg["latent_attr"]).max(0),
                     dtype=torch.float32),
                 n_latent=n_latent)
-        else:
-            ei, ea = cell_adjacency_edges(self.mesh)
-            g["edge_index"] = torch.tensor(ei)
-            g["edge_attr"] = torch.tensor(ea / np.abs(ea).max(0), dtype=torch.float32)
         return g
 
     def predict(self, plasma: dict, params: dict | None = None) -> dict:
@@ -347,14 +331,10 @@ class SourcePredictor:
 
         g = self._graph
         with torch.no_grad():
-            if "edge_index" in g:
-                pp = pt[None].expand(x.shape[0], -1)
-                yn = self.core(x, g["edge_index"], g["edge_attr"], pp).numpy()
-            else:
-                pl = pt[None].expand(g["n_latent"], -1)
-                yn = self.core(x, g["assign_index"], g["assign_attr"],
-                               g["latent_edges"], g["latent_attr"], pl,
-                               g["n_latent"]).numpy()
+            pl = pt[None].expand(g["n_latent"], -1)
+            yn = self.core(x, g["assign_index"], g["assign_attr"],
+                           g["latent_edges"], g["latent_attr"], pl,
+                           g["n_latent"]).numpy()
         y = yn * self.norm["y_std"] + self.norm["y_mean"]
         return {name: y[:, j] for j, name in
                 enumerate(self.manifest["variables"]["outputs"])}

@@ -88,7 +88,7 @@ def test_structured_mesh_builder():
     assert np.allclose(d, 1.0)
 
 
-def test_gnn_models_forward():
+def test_gnn_forward():
     torch = pytest.importorskip("torch")
     pytest.importorskip("torch_geometric")
     from solstice.graphs import build_latent_graph
@@ -97,19 +97,11 @@ def test_gnn_models_forward():
     n, k = 40, 8
     rng = np.random.default_rng(1)
     x = torch.tensor(rng.normal(size=(n, 2)), dtype=torch.float32)
-    ei = torch.tensor(np.stack([np.arange(n - 1), np.arange(1, n)]))
-    ei = torch.cat([ei, ei.flip(0)], dim=1)
-    ea = torch.tensor(rng.normal(size=(ei.shape[1], 3)), dtype=torch.float32)
-    params = torch.zeros(n, 5)
-
-    m1 = build_model("gnn_v1", {"node_features": 2, "param_dim": 5, "out_features": 3,
-                                "hidden": 16, "n_layers": 2})
-    assert m1(x, ei, ea, params).shape == (n, 3)
 
     r, z = rng.normal(size=n), rng.normal(size=n)
     lg = build_latent_graph(r, z, n_latent=k, k_nn=3, seed=0)
-    m2 = build_model("gnn_encproc", {"node_features": 2, "param_dim": 5, "out_features": 3,
-                                     "hidden": 16, "n_process_layers": 2})
+    m2 = build_model("gnn", {"node_features": 2, "param_dim": 5, "out_features": 3,
+                        "hidden": 16, "n_process_layers": 2})
     out = m2(x, torch.tensor(lg["assign_index"]),
              torch.tensor(lg["assign_attr"], dtype=torch.float32),
              torch.tensor(lg["latent_edges"]),

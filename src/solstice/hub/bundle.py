@@ -42,7 +42,8 @@ DEFAULT_TRANSFORM = {
 
 
 def _engineer_inputs(raw: dict, transform: dict, names: list[str],
-                     x_mean: np.ndarray, x_std: np.ndarray) -> np.ndarray:
+                     x_mean: np.ndarray, x_std: np.ndarray,
+                     ranges: dict | None = None) -> np.ndarray:
     feats = dict(raw)
     for new, spec in transform.get("merged", {}).items():
         parts = spec["of"] if isinstance(spec, dict) else spec
@@ -58,12 +59,22 @@ def _engineer_inputs(raw: dict, transform: dict, names: list[str],
     for j, n in enumerate(names):
         if n in transform.get("log_inputs", ()):
             x[j] = np.log10(max(x[j], 1e-30))
+    if ranges:
+        import warnings
+        for j, n in enumerate(names):
+            lo, hi = ranges.get(n, (-np.inf, np.inf))
+            if not (lo <= x[j] <= hi):
+                warnings.warn(
+                    f"input '{n}' = {x[j]:.4g} is outside the training range "
+                    f"[{lo:.4g}, {hi:.4g}] — the prediction is an extrapolation "
+                    "and should not be trusted quantitatively", stacklevel=3)
     return (x - x_mean) / x_std
 
 
 def create_state_bundle(pt_path: str, out_dir: str, name: str, mesh_path: str,
                         provenance: dict | None = None,
-                        transform: dict | None = None) -> Path:
+                        transform: dict | None = None,
+                        input_ranges: dict | None = None) -> Path:
     import torch
 
     pt = torch.load(pt_path, map_location="cpu", weights_only=False)
@@ -106,6 +117,7 @@ def create_state_bundle(pt_path: str, out_dir: str, name: str, mesh_path: str,
             "log10_outputs": {k: bool(v) for k, v in fields.items()},
         },
         "input_transform": transform or DEFAULT_TRANSFORM,
+        "input_ranges": input_ranges or _ranges_from_pt(pt),
         "provenance": {"parent": None, **(provenance or {})},
         "license": "CC-BY-4.0",
         **extra,
@@ -174,7 +186,8 @@ class StatePredictor:
 
         names = self.manifest["variables"]["inputs"]
         xn = _engineer_inputs(params, self.manifest["input_transform"], names,
-                              self.norm["x_mean"], self.norm["x_std"])
+                              self.norm["x_mean"], self.norm["x_std"],
+                              ranges=self.manifest.get("input_ranges"))
         xt = torch.tensor(xn, dtype=torch.float32)
         with torch.no_grad():
             if self._graph is None:
@@ -200,8 +213,18 @@ def load_state_bundle(path: str) -> StatePredictor:
     return StatePredictor(path)
 
 
+def _ranges_from_pt(pt) -> dict | None:
+    """Training box per engineered input (saved by the notebooks as x_min/x_max)."""
+    if "x_min" not in pt or "x_max" not in pt:
+        return None
+    names = pt["inputs"] if isinstance(pt["inputs"], list) else list(pt["inputs"])
+    return {n: [float(lo), float(hi)]
+            for n, lo, hi in zip(names, pt["x_min"], pt["x_max"])}
+
+
 def create_source_bundle(pt_path: str, out_dir: str, name: str, mesh_path: str,
-                         provenance: dict | None = None) -> Path:
+                         provenance: dict | None = None,
+                         input_ranges: dict | None = None) -> Path:
     """Package a sources-notebook .pt (plasma state -> EIRENE sources)."""
     import torch
 
@@ -235,6 +258,7 @@ def create_source_bundle(pt_path: str, out_dir: str, name: str, mesh_path: str,
         },
         "use_params": bool(pt.get("use_params", True)),
         "input_transform": DEFAULT_TRANSFORM,
+        "input_ranges": input_ranges or _ranges_from_pt(pt),
         "provenance": {"parent": None, **(provenance or {})},
         "license": "CC-BY-4.0",
         "n_latent": pt.get("n_latent"),
@@ -315,7 +339,8 @@ class SourcePredictor:
             if params is None:
                 raise ValueError("this bundle conditions on control params")
             xn = _engineer_inputs(params, self.manifest["input_transform"], names,
-                                  self.norm["x_mean"], self.norm["x_std"])
+                                  self.norm["x_mean"], self.norm["x_std"],
+                                  ranges=self.manifest.get("input_ranges"))
         else:
             xn = np.zeros(len(names))
         pt = torch.tensor(xn, dtype=torch.float32)

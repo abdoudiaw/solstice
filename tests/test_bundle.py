@@ -115,3 +115,34 @@ def test_source_bundle_roundtrip(tmp_path, tiny_mesh):
                for v in sources.values())
     with pytest.raises(ValueError):
         pred.predict(state)  # params required when use_params
+
+
+def test_out_of_range_warning(tmp_path, tiny_mesh):
+    torch = pytest.importorskip("torch")
+    from solstice.hub import create_state_bundle, load_state_bundle
+    from solstice.models import build_model
+
+    mesh_path, n_cells = tiny_mesh
+    core = build_model("mlp_v1", {"in_dim": 5, "hidden": 8, "out_dim": n_cells})
+    pt = {
+        "state_dict": core.state_dict(),
+        "cell_mean": np.zeros(n_cells), "cell_std": np.ones(n_cells),
+        "log10": False,
+        "inputs": ["chi", "core_fueling", "dna", "ptot", "puff_D2"],
+        "x_mean": np.array([0.7, 20.0, 0.5, 2e6, 21.0]),
+        "x_std": np.array([0.1, 0.3, 0.3, 1e6, 0.5]),
+        "x_min": np.array([0.1, 19.9, 0.1, 2e6, 20.1]),
+        "x_max": np.array([2.0, 20.9, 2.0, 16e6, 21.7]),
+    }
+    ptp = tmp_path / "pepc-test-state-mlp-te.pt"
+    torch.save(pt, ptp)
+    pred = load_state_bundle(create_state_bundle(
+        ptp, tmp_path / "b", "pepc-test-state-v1", mesh_path))
+    ok = {"pe": 4e6, "pi": 4e6, "core_fueling": 3e20, "puff_D2": 1e21,
+          "dna": 0.5, "hci": 0.7, "hce": 0.7}
+    import warnings as w
+    with w.catch_warnings():
+        w.simplefilter("error")
+        pred.predict(ok)                          # inside the box: no warning
+    with pytest.warns(UserWarning, match="ptot.*outside the training range"):
+        pred.predict({**ok, "pe": 20e6, "pi": 20e6})   # ptot = 40 MW: outside

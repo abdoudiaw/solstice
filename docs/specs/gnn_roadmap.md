@@ -54,7 +54,7 @@ indirection means the architecture *admits* cross-geometry transfer
 (DIII-D -> KSTAR -> ITER/SPARC). Zero-shot transfer should be treated
 as a diagnostic, not a deliverable: regime shift (physics, not
 geometry) dominates, so the credible claim is few-shot fine-tuning on a
-small target-machine dataset. That matches the REACT transfer-learning
+small target-machine dataset. That matches the DIII-D -> KSTAR transfer-learning
 plan.
 
 ## Lessons from prior SOLPS surrogate studies
@@ -78,7 +78,7 @@ Adopted from the most directly comparable prior work:
   the deposited heat/particle flux profiles on target face sets are
   auxiliary output heads next to the 2D fields. This is the principled
   version of "weighting near-target locations": direct supervision on
-  the quantity that matters (10 MW/m^2 engineering limit; REACT go/no-go
+  the quantity that matters (10 MW/m^2 engineering limit; the milestone
   is <5% peak target heat-flux error), at near-zero extra cost since the
   dataset already contains them. No separate target-only models unless
   the joint model demonstrably underperforms a target-only baseline.

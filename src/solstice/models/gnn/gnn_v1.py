@@ -12,7 +12,10 @@
 # =========================================================================================
 # Authors: Abdourahmane (Abdou) Diaw - diawa@ornl.gov
 # SPDX-License-Identifier: Apache-2.0
-"""gnn_v1: conditional GNN on the native SOLPS mesh (solpex-paper port).
+"""gnn_v1 (legacy): conditional GNN on the native mesh (solpex-paper port).
+
+Retired as a released architecture — kept for loading old checkpoints and
+as the paper baseline. The released architecture is "gnn" (encproc.py).
 
 Node features (geometry) + FiLM conditioning on control parameters at
 every message-passing layer; multi-field per-node output. The baseline

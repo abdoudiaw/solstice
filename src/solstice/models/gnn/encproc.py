@@ -12,7 +12,7 @@
 # =========================================================================================
 # Authors: Abdourahmane (Abdou) Diaw - diawa@ornl.gov
 # SPDX-License-Identifier: Apache-2.0
-"""gnn_encproc: encode-process-decode GNN with a latent mesh.
+"""gnn: encode-process-decode GNN with a latent mesh (the SOLSTICE GNN).
 
 Modernization of gnn_v1 along the WeatherNext/anemoi lines
 (docs/specs/gnn_roadmap.md): cells are encoded onto a coarse latent
@@ -29,7 +29,8 @@ from solstice.models.gnn.layers import BipartiteConv, EdgeConv, NodeFiLM
 from solstice.models.registry import register_model
 
 
-@register_model("gnn_encproc")
+@register_model("gnn")
+@register_model("gnn_encproc")  # legacy alias (pre-rename bundles)
 class GNNEncProcDec(nn.Module):
     def __init__(self, node_features=2, param_dim=5, out_features=4,
                  hidden=128, n_process_layers=8, edge_dim=3, dropout=0.1,

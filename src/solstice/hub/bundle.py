@@ -198,3 +198,142 @@ class StatePredictor:
 
 def load_state_bundle(path: str) -> StatePredictor:
     return StatePredictor(path)
+
+
+def create_source_bundle(pt_path: str, out_dir: str, name: str, mesh_path: str,
+                         provenance: dict | None = None) -> Path:
+    """Package a sources-notebook .pt (plasma state -> EIRENE sources)."""
+    import torch
+
+    pt = torch.load(pt_path, map_location="cpu", weights_only=False)
+    if pt.get("task") != "sources":
+        raise ValueError(f"{pt_path} is not a sources checkpoint")
+    out = Path(out_dir) / name
+    out.mkdir(parents=True, exist_ok=True)
+
+    from safetensors.torch import save_file
+    save_file({k: v.contiguous() for k, v in pt["state_dict"].items()},
+              out / "weights.safetensors")
+    plasma = {k: bool(v) for k, v in pt["plasma_features"].items()}
+    np.savez(out / "normalization.npz",
+             y_mean=pt["y_mean"], y_std=pt["y_std"],
+             x_mean=pt["x_mean"], x_std=pt["x_std"],
+             geom_mean=pt["geom_mean"], geom_std=pt["geom_std"],
+             pf_mean=np.array([pt["pf_mean"][k] for k in plasma]),
+             pf_std=np.array([pt["pf_std"][k] for k in plasma]))
+    shutil.copy(mesh_path, out / "mesh.nc")
+
+    manifest = {
+        "bundle_version": BUNDLE_VERSION,
+        "name": name,
+        "task": "sources",
+        "model": {"class": pt["model_class"], "config": dict(pt["config"])},
+        "variables": {
+            "plasma_features": plasma,      # name -> log10, node-feature order
+            "outputs": list(pt["sources"]),
+            "inputs": list(pt["inputs"]),   # FiLM conditioning params
+        },
+        "use_params": bool(pt.get("use_params", True)),
+        "input_transform": DEFAULT_TRANSFORM,
+        "provenance": {"parent": None, **(provenance or {})},
+        "license": "CC-BY-4.0",
+        "n_latent": pt.get("n_latent"),
+        "k_nn": pt.get("k_nn", 6),
+    }
+    (out / "bundle.json").write_text(json.dumps(manifest, indent=2, default=str))
+    (out / "model_card.md").write_text(
+        f"# {name}\n\nSOLSTICE sources model bundle (EIRENE replacement: local "
+        "plasma state -> volumetric neutral sources). See bundle.json.\n")
+    return out
+
+
+class SourcePredictor:
+    """Per-cell plasma state (+ control params) -> EIRENE source terms."""
+
+    def __init__(self, path: str):
+        import torch
+        import xarray as xr
+        from safetensors.torch import load_file
+
+        from solstice.models.registry import build_model
+
+        path = Path(path)
+        self.manifest = json.loads((path / "bundle.json").read_text())
+        if self.manifest["task"] != "sources":
+            raise ValueError("not a sources bundle")
+        self.core = build_model(self.manifest["model"]["class"],
+                                self.manifest["model"]["config"])
+        self.core.load_state_dict(load_file(path / "weights.safetensors"))
+        self.core.eval()
+        self.norm = dict(np.load(path / "normalization.npz").items())
+        self.mesh = xr.open_dataset(path / "mesh.nc")
+        self._graph = self._build_graph(torch)
+
+    def _build_graph(self, torch):
+        from solstice.graphs import (build_latent_graph, cell_adjacency_edges,
+                                     default_node_features)
+        geom = default_node_features(self.mesh)
+        geom = (geom - self.norm["geom_mean"]) / self.norm["geom_std"]
+        g = {"geom": torch.tensor(geom, dtype=torch.float32)}
+        if self.manifest["model"]["class"] == "gnn_encproc":
+            n_latent = int(self.manifest["n_latent"])
+            lg = build_latent_graph(self.mesh.cell_r.values, self.mesh.cell_z.values,
+                                    n_latent=n_latent,
+                                    k_nn=int(self.manifest.get("k_nn", 6)))
+            g.update(
+                assign_index=torch.tensor(lg["assign_index"]),
+                assign_attr=torch.tensor(
+                    lg["assign_attr"] / (np.abs(lg["assign_attr"]).max(0) + 1e-12),
+                    dtype=torch.float32),
+                latent_edges=torch.tensor(lg["latent_edges"]),
+                latent_attr=torch.tensor(
+                    lg["latent_attr"] / np.abs(lg["latent_attr"]).max(0),
+                    dtype=torch.float32),
+                n_latent=n_latent)
+        else:
+            ei, ea = cell_adjacency_edges(self.mesh)
+            g["edge_index"] = torch.tensor(ei)
+            g["edge_attr"] = torch.tensor(ea / np.abs(ea).max(0), dtype=torch.float32)
+        return g
+
+    def predict(self, plasma: dict, params: dict | None = None) -> dict:
+        """plasma: per-cell arrays in physical units, keys = plasma_features.
+        params: raw control parameters (required if the bundle uses FiLM)."""
+        import torch
+
+        pf = self.manifest["variables"]["plasma_features"]
+        feats = [self._graph["geom"].numpy()[:, 0], self._graph["geom"].numpy()[:, 1]]
+        for j, (name, is_log) in enumerate(pf.items()):
+            a = np.asarray(plasma[name], dtype=np.float64)
+            if is_log:
+                a = np.log10(np.clip(np.abs(a), 1e-6, None))
+            feats.append((a - self.norm["pf_mean"][j]) / self.norm["pf_std"][j])
+        x = torch.tensor(np.stack(feats, axis=1), dtype=torch.float32)
+
+        names = self.manifest["variables"]["inputs"]
+        if self.manifest["use_params"]:
+            if params is None:
+                raise ValueError("this bundle conditions on control params")
+            xn = _engineer_inputs(params, self.manifest["input_transform"], names,
+                                  self.norm["x_mean"], self.norm["x_std"])
+        else:
+            xn = np.zeros(len(names))
+        pt = torch.tensor(xn, dtype=torch.float32)
+
+        g = self._graph
+        with torch.no_grad():
+            if "edge_index" in g:
+                pp = pt[None].expand(x.shape[0], -1)
+                yn = self.core(x, g["edge_index"], g["edge_attr"], pp).numpy()
+            else:
+                pl = pt[None].expand(g["n_latent"], -1)
+                yn = self.core(x, g["assign_index"], g["assign_attr"],
+                               g["latent_edges"], g["latent_attr"], pl,
+                               g["n_latent"]).numpy()
+        y = yn * self.norm["y_std"] + self.norm["y_mean"]
+        return {name: y[:, j] for j, name in
+                enumerate(self.manifest["variables"]["outputs"])}
+
+
+def load_source_bundle(path: str) -> SourcePredictor:
+    return SourcePredictor(path)

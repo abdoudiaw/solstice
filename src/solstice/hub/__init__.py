@@ -34,4 +34,5 @@ def load(name: str):
     from solstice.hub.bundle import load_state_bundle
     return load_state_bundle(snapshot_download(repo_id))
 
-from solstice.hub.bundle import create_state_bundle, load_state_bundle  # noqa: E402,F401
+from solstice.hub.bundle import (create_source_bundle, create_state_bundle,  # noqa: E402,F401
+                                 load_source_bundle, load_state_bundle)

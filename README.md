@@ -53,7 +53,7 @@ src/solstice/
   hub/         released-model bundles: create / load / predict
   physics/     scalar QoIs from predicted fields
 configs/       YAML model configs
-docs/specs/    data schema, checkpoint bundle, GNN roadmap — the contracts
+docs/specs/    data schema and checkpoint bundle — the contracts
 examples/      predict scripts for released models
 ```
 

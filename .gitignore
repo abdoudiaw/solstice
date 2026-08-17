@@ -21,3 +21,4 @@ wandb/
 .ipynb_checkpoints/
 notes/
 notebooks_local/
+notes_local/

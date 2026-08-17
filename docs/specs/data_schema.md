@@ -49,7 +49,7 @@ case/
     # Per-boundary-face arrays (dim: face, valid on target face sets):
     # deposited heat flux [W/m^2] and particle flux — the 1D target
     # load profiles. Kept in every dataset and learned as auxiliary
-    # outputs (see gnn_roadmap.md), also the ground truth for target
+    # outputs (auxiliary heads), also the ground truth for target
     # evaluation metrics.
     # Per-cell arrays:
     # heat flux components (fhe*, fhi*), radiated power density

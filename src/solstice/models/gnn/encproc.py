@@ -14,7 +14,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """gnn: encode-process-decode GNN with a latent mesh (the SOLSTICE GNN).
 
-Encode-process-decode with a latent mesh (docs/specs/gnn_roadmap.md):
+Encode-process-decode with a latent mesh:
 cells are encoded onto a coarse latent
 mesh (solstice.graphs.latent), a deep processor runs only there with
 FiLM conditioning per layer, and a decoder maps back to cells with a

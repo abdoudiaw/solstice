@@ -48,8 +48,27 @@ def _engineer_inputs(raw: dict, transform: dict, names: list[str],
     for new, spec in transform.get("merged", {}).items():
         parts = spec["of"] if isinstance(spec, dict) else spec
         op = spec.get("op", "sum") if isinstance(spec, dict) else "sum"
+        if new in feats:
+            for p in parts:
+                feats.pop(p, None)   # canonical DOF given directly; ignore parts
+            continue
         if all(p in feats for p in parts):
             vals = [float(feats.pop(p)) for p in parts]
+            spread = max(vals) - min(vals)
+            if spread > 1e-9 * max(abs(v) for v in vals):
+                import warnings
+                if op == "sum":
+                    warnings.warn(
+                        f"{'/'.join(parts)} differ, but the model only sees their sum "
+                        f"'{new}' (training data had them equal) — the asymmetry is "
+                        "ignored. Pass '" + new + "' directly to be explicit.",
+                        stacklevel=3)
+                else:
+                    warnings.warn(
+                        f"{'/'.join(parts)} differ, but the model uses a single "
+                        f"'{new}' = {parts[0]} (training data had them equal) — "
+                        f"{'/'.join(parts[1:])} is ignored. Pass '" + new + "' directly.",
+                        stacklevel=3)
             feats[new] = sum(vals) if op == "sum" else vals[0]
     # aliases: trained feature name -> canonical raw name (legacy checkpoints)
     for trained, canonical in transform.get("aliases", {}).items():

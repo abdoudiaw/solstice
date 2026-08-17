@@ -33,11 +33,13 @@ print(f"loaded {model.manifest['name']}: "
       f"{model.manifest['model']['class']} -> {list(model.fields)}")
 
 # a mid-range DIII-D operating point (SI units)
+# the model's true degrees of freedom (training data has pe = pi and
+# hci = hce, so the model sees ptot = pe + pi and a single chi)
 params = {
-    "pe": 3.0e6, "pi": 3.0e6,          # core-boundary power per channel [W]
-    "core_fueling": 3.0e20,             # core fueling parameter
-    "puff_D2": 1.0e21,                  # D2 gas puff [atom/s]
-    "dna": 0.5, "hci": 0.7, "hce": 0.7  # transport coefficients [m^2/s]
+    "ptot": 6.0e6,           # total core-boundary power pe + pi [W]
+    "core_fueling": 3.0e20,  # core fueling parameter
+    "puff_D2": 1.0e21,       # D2 gas puff [atom/s]
+    "dna": 0.5, "chi": 0.7,  # transport coefficients [m^2/s]
 }
 fields = model.predict(params)
 for name, values in fields.items():

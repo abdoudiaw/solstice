@@ -24,16 +24,19 @@ training data.
 from solstice.hub import load_state_bundle, load_source_bundle
 
 state = load_state_bundle("pepc-diiid-state-v1")
-fields = state.predict({"pe": 3e6, "pi": 3e6, "core_fueling": 3e20,
-                        "puff_D2": 1e21, "dna": 0.5, "hci": 0.7, "hce": 0.7})
+fields = state.predict({"ptot": 6e6, "chi": 0.7, "core_fueling": 3e20,
+                        "puff_D2": 1e21, "dna": 0.5})
 
 sources = load_source_bundle("pepc-diiid-sources-v1")
 terms = sources.predict(plasma_state, params)
 ```
 
 Runnable versions: `examples/predict_state.py` and
-`examples/predict_sources.py`. Requests outside the training parameter
-box raise a warning (ensemble-based uncertainty estimates are planned).
+`examples/predict_sources.py`. Inputs are the model's true degrees of
+freedom (the training data has pe = pi and hci = hce, so the models see
+`ptot = pe + pi` and a single `chi`; passing raw asymmetric pairs
+triggers a warning). Requests outside the training parameter box also
+raise a warning (ensemble-based uncertainty estimates are planned).
 
 ## Released models
 

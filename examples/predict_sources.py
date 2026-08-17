@@ -35,8 +35,9 @@ print(f"loaded {model.manifest['name']}: plasma {list(pf)} -> "
       f"{model.manifest['variables']['outputs']}")
 
 n_cells = model.mesh.sizes["cell"]
-params = {"pe": 3.0e6, "pi": 3.0e6, "core_fueling": 3.0e20,
-          "puff_D2": 1.0e21, "dna": 0.5, "hci": 0.7, "hce": 0.7}
+# the model's true degrees of freedom (pe = pi -> ptot, hci = hce -> chi)
+params = {"ptot": 6.0e6, "chi": 0.7, "core_fueling": 3.0e20,
+          "puff_D2": 1.0e21, "dna": 0.5}
 
 if len(sys.argv) > 2:  # real plasma state from a training store
     import xarray as xr

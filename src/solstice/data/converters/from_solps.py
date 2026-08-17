@@ -194,25 +194,111 @@ def _species_tags(species_chars: np.ndarray) -> list[str]:
     return tags
 
 
-def read_case_fields(run_dir: str, nx: int, ny: int) -> tuple[dict, list[str]]:
-    """Per-cell named field arrays (interior, flattened) from balance.nc."""
+# EIRENE volumetric source groups (mapping from solpex-paper
+# build_coupling_dataset.py; species-resolved groups take D+ = index 1)
+EIRENE_SOURCES = {
+    "sp": (["eirene_mc_papl_sna_bal", "eirene_mc_pmpl_sna_bal",
+            "eirene_mc_pipl_sna_bal", "eirene_mc_pppl_sna_bal"], True),
+    "sne": (["eirene_mc_pael_sne_bal", "eirene_mc_pmel_sne_bal"], False),
+    "qe": (["eirene_mc_eael_she_bal", "eirene_mc_emel_she_bal",
+            "eirene_mc_eiel_she_bal", "eirene_mc_epel_she_bal"], False),
+    "qi": (["eirene_mc_eapl_shi_bal", "eirene_mc_empl_shi_bal",
+            "eirene_mc_eipl_shi_bal", "eirene_mc_eppl_shi_bal"], False),
+    "sm": (["eirene_mc_mapl_smo_bal", "eirene_mc_mmpl_smo_bal",
+            "eirene_mc_mipl_smo_bal", "eirene_mc_mppl_smo_bal"], True),
+}
+NEUTRAL_FIELDS = ("dab2", "dmb2", "tab2", "tmb2")  # EIRENE grid, species 0
+
+
+def read_balance_all(run_dir: str) -> dict:
     bal = _readers().read_balance(str(Path(run_dir) / "balance.nc"))
     if bal is None:
         raise FileNotFoundError(f"no balance.nc in {run_dir}")
+    return bal
 
-    def cells(a2d):
-        return np.asarray(a2d).T[1 : nx + 1, 1 : ny + 1].reshape(-1)
 
+def _cells(a2d, nx, ny):
+    return np.asarray(a2d).T[1 : nx + 1, 1 : ny + 1].reshape(-1)
+
+
+def read_case_fields(run_dir_or_bal, nx: int, ny: int) -> tuple[dict, list[str]]:
+    """Per-cell named field arrays (interior, flattened) from balance.nc."""
+    bal = (read_balance_all(run_dir_or_bal)
+           if not isinstance(run_dir_or_bal, dict) else run_dir_or_bal)
     tags = _species_tags(bal["species"])
     fields = {
-        "te": cells(bal["te"]) / EV,
-        "ti": cells(bal["ti"]) / EV,
-        "ne": cells(bal["ne"]),
+        "te": _cells(bal["te"], nx, ny) / EV,
+        "ti": _cells(bal["ti"], nx, ny) / EV,
+        "ne": _cells(bal["ne"], nx, ny),
     }
     for i, tag in enumerate(tags):
-        fields[f"na_{tag}"] = cells(bal["na"][i])
-        fields[f"ua_{tag}"] = cells(bal["ua"][i])
+        fields[f"na_{tag}"] = _cells(bal["na"][i], nx, ny)
+        fields[f"ua_{tag}"] = _cells(bal["ua"][i], nx, ny)
     return fields, tags
+
+
+def read_case_sources(bal: dict, nx: int, ny: int, run_dir: str | None = None) -> dict:
+    """EIRENE source terms and neutral fields, per-cell.
+
+    Volumetric source grouping follows the (documented) solpex mapping —
+    a candidate for upstreaming into SOLPS-routines. Neutral fields come
+    from SOLPS-routines read_ft44 (fort.44, native (nx, ny) B2 layout);
+    the balance.nc EIRENE-grid fallback uses columns [1:-3], which
+    matches fort.44 exactly (the legacy solpex slice [2:-2] was shifted
+    by one poloidal column)."""
+    out = {}
+    for name, (group, species_dim) in EIRENE_SOURCES.items():
+        acc = None
+        for vn in group:
+            if vn not in bal:
+                continue
+            a = np.nan_to_num(np.asarray(bal[vn]), nan=0.0)
+            a = a[:, 1].sum(axis=0) if species_dim else a.sum(axis=0)
+            acc = a if acc is None else acc + a
+        if acc is None:
+            raise KeyError(f"missing EIRENE source group for {name}")
+        out[name] = _cells(acc, nx, ny)
+
+    neut = None
+    if run_dir is not None and (Path(run_dir) / "fort.44").exists():
+        neut, _wld = _readers().read_ft44(str(Path(run_dir) / "fort.44"))
+    for vn in NEUTRAL_FIELDS:
+        if neut is not None and vn in neut:
+            v = np.asarray(neut[vn])[..., 0].reshape(-1)  # (nx, ny) native
+        elif vn in bal:
+            v = np.asarray(bal[vn])[0, 1:-1, 1:-3].T.reshape(-1)
+        else:
+            v = np.zeros(nx * ny)
+        out[vn] = v / EV if vn.startswith("t") else v
+    return out
+
+
+def read_case_derived(bal: dict, nx: int, ny: int) -> tuple[dict, dict]:
+    """Poloidal heat flux density [W/m^2]: cell-centred q_pol plus
+    face-centred target profiles (solpex 'no_jv' method: sum fhe_*+fhi_*
+    x-face components, subtract the thermal-current part, divide by
+    poloidal face area gs[0], then average the two x-faces per cell)."""
+    fht = None
+    for vn, arr in bal.items():
+        if vn.startswith(("fhe_", "fhi_")) and getattr(arr, "ndim", 0) == 3:
+            a = np.asarray(arr)[0]
+            fht = a if fht is None else fht + a
+    if fht is None or "gs" not in bal:
+        raise KeyError("missing fhe_*/fhi_*/gs for heat flux")
+    if "fhe_thermj" in bal:
+        fht = fht - np.asarray(bal["fhe_thermj"])[0]
+    sx = np.asarray(bal["gs"])[0]
+    with np.errstate(divide="ignore", invalid="ignore"):
+        qx_face = np.where(sx > 0, fht / sx, 0.0)
+    qx_cc = 0.5 * (qx_face + np.roll(qx_face, -1, axis=1))
+    qx_cc[:, -1] = np.nan
+    q_pol = np.nan_to_num(qx_cc, nan=0.0, posinf=0.0, neginf=0.0)
+    derived = {"q_pol": _cells(q_pol, nx, ny)}
+    targets = {
+        "q_inner_target": np.nan_to_num(qx_face[1:-1, 1], posinf=0.0, neginf=0.0),
+        "q_outer_target": np.nan_to_num(qx_face[1:-1, -1], posinf=0.0, neginf=0.0),
+    }
+    return derived, targets
 
 
 def read_case_inputs(run_dir: str) -> tuple[dict, dict]:

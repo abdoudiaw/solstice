@@ -78,11 +78,16 @@ def build_ensemble_store(
         run_dirs = run_dirs[:limit]
 
     case_ids, field_rows, input_rows, converged, puff_missing = [], [], [], [], []
+    target_rows = []
     field_names, input_names = None, None
     skipped = []
     for i, run in enumerate(run_dirs):
         try:
-            fields, _tags = from_solps.read_case_fields(run, nx, ny)
+            bal = from_solps.read_balance_all(run)
+            fields, _tags = from_solps.read_case_fields(bal, nx, ny)
+            fields.update(from_solps.read_case_sources(bal, nx, ny, run))
+            derived, targets = from_solps.read_case_derived(bal, nx, ny)
+            fields.update(derived)
             inputs, meta = from_solps.read_case_inputs(run)
         except Exception as err:  # noqa: BLE001 - collect and report bad runs
             skipped.append((run.name, str(err)))
@@ -92,6 +97,8 @@ def build_ensemble_store(
         if sorted(fields) != field_names:
             skipped.append((run.name, "field set differs from first run"))
             continue
+        target_rows.append(np.stack([targets["q_inner_target"],
+                                     targets["q_outer_target"]]))
         case_ids.append(meta.get("case", {}).get("case_id", run.name))
         converged.append(bool(meta.get("case", {}).get("status", {}).get("converged", False)))
         puff_missing.append("puff_D2" not in inputs)
@@ -122,6 +129,10 @@ def build_ensemble_store(
         ds[f"input_{name}"] = ("case", inputs_arr[:, j])
     ds["params_converged"] = ("case", np.asarray(converged))
     ds["puff_record_missing"] = ("case", np.asarray(puff_missing))
+    # face-centred target heat-flux profiles [W/m^2] along iy (1..ny)
+    tq = np.stack(target_rows)
+    ds["q_inner_target"] = (("case", "target_iy"), tq[:, 0, :].astype(np.float32))
+    ds["q_outer_target"] = (("case", "target_iy"), tq[:, 1, :].astype(np.float32))
     for name, values in qc_flags(field_names, fields_arr).items():
         ds[name] = ("case", values)
     ds.attrs.update(

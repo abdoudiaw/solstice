@@ -67,8 +67,7 @@ examples/      predict scripts for released models
    case where cells carry optional `(ix, iy)` labels. See
    `docs/specs/data_schema.md`.
 2. **SOLPS file reading follows
-   [SOLPS-routines](https://github.com/ORNL-Fusion/SOLPS-routines)** (Jeremy Lore, ORNL) — we do
-   not re-derive b2fgmtry/b2fstate parsing or index conventions here.
+   [SOLPS-routines](https://github.com/ORNL-Fusion/SOLPS-routines)** (Jeremy Lore, ORNL).
 3. **Self-describing checkpoints.** Weights + config + normalization stats
    + mesh + provenance in one bundle. See `docs/specs/checkpoint_spec.md`.
 4. **Graphs are derived.** Datasets store the mesh; loaders build edges

@@ -12,26 +12,22 @@
 # =========================================================================================
 # Authors: Abdourahmane (Abdou) Diaw - diawa@ornl.gov
 # SPDX-License-Identifier: Apache-2.0
-"""Named released weights, torch.hub-style. Names follow the checkpoint spec:
-{machine}-{regime}-{task}-{arch}[-mini]-v{N}."""
+"""mlp_v1: per-field MLP baseline (params -> full per-cell field).
 
-from __future__ import annotations
+Subclasses nn.Sequential with the exact layer layout of the quickstart
+notebook so its saved state_dicts load unchanged ('0.weight', ...).
+"""
 
-# name -> huggingface repo id (populated at first release)
-RELEASES: dict[str, str] = {}
+import torch.nn as nn
+
+from solstice.models.registry import register_model
 
 
-def load(name: str):
-    """Download a released bundle by name and return a ready ModelInterface."""
-    from solstice.inference import load_checkpoint
-
-    try:
-        repo_id = RELEASES[name]
-    except KeyError:
-        raise KeyError(f"unknown release {name!r}; available: {sorted(RELEASES)}") from None
-    from huggingface_hub import snapshot_download
-
-    from solstice.hub.bundle import load_state_bundle
-    return load_state_bundle(snapshot_download(repo_id))
-
-from solstice.hub.bundle import create_state_bundle, load_state_bundle  # noqa: E402,F401
+@register_model("mlp_v1")
+class MLPv1(nn.Sequential):
+    def __init__(self, in_dim, hidden, out_dim):
+        super().__init__(
+            nn.Linear(in_dim, hidden), nn.GELU(),
+            nn.Linear(hidden, hidden), nn.GELU(),
+            nn.Linear(hidden, out_dim),
+        )

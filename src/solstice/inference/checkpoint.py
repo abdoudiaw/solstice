@@ -28,7 +28,15 @@ BUNDLE_VERSION = "0.1"
 
 
 def load_checkpoint(path: str):
-    """Reconstruct a ModelInterface from a bundle directory."""
+    """Reconstruct a predictor from a bundle directory."""
+    manifest = json.loads((Path(path) / "bundle.json").read_text())
+    if manifest.get("task") == "state":
+        from solstice.hub.bundle import load_state_bundle
+        return load_state_bundle(path)
+    return _load_generic(path)
+
+
+def _load_generic(path: str):
     import torch
     from safetensors.torch import load_file
 

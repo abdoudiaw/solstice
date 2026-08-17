@@ -59,6 +59,7 @@ def build_latent_graph(cell_r, cell_z, n_latent=256, k_nn=6, seed=0):
     dv = latent[nearest] - pts
     assign_attr = np.column_stack([dv, np.hypot(dv[:, 0], dv[:, 1])])
 
+    k_nn = min(k_nn, n_latent - 1)
     ld2 = ((latent[:, None, :] - latent[None]) ** 2).sum(-1)
     np.fill_diagonal(ld2, np.inf)
     nbr = np.argsort(ld2, axis=1)[:, :k_nn]

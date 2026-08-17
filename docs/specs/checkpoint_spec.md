@@ -7,7 +7,7 @@ reconstruct the network and predict — no training code, no training data.
 <name>/                        e.g. diiid-lmode-sources-gnn-v1/
   bundle.json                  manifest, see below
   weights.safetensors          model state dict
-  normalization.json           per-variable stats (mean/std or min/max, units)
+  normalization.npz            per-variable stats (arrays: per-cell mean/std, input scalers)
   mesh.nc                      canonical mesh (fixed-geometry models ship their grid)
   model_card.md                human-readable card (intended use, metrics, caveats)
 ```

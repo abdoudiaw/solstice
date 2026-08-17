@@ -2,60 +2,69 @@
 
 **S**crape-**O**ff **L**ayer **S**urrogate **T**raining, **I**nference & **C**oupling **E**cosystem — neural-network surrogates for SOLPS-ITER edge plasmas.
 
-Install: `pip install solstice-fusion` (import name: `solstice`).
-
 Two model tasks, one framework:
 
-- **State models** (`params -> plasma`): predict plasma backgrounds
-  (Te, Ti, ne, ua, ...) from control parameters. For control-oriented
-  digital twins (e.g. coupling to core transport solvers).
-- **Source models** (`plasma -> sources`): predict neutral source terms
-  (Sp, Sne, Qe, Qi, Sm) from the local plasma state. Drop-in EIRENE
-  replacement, callable inline from B2.5.
+- **State models** (`params -> plasma`): plasma backgrounds
+  (Te, Ti, ne, ua, heat flux, radiated power) from control parameters.
+- **Source models** (`plasma -> sources`): neutral source terms
+  (Sp, Sne, Qe, Qi, Sm) from the local plasma state.
 
-Any architecture (GNN, U-Net, MLP, graph transformer) registers under a
-task and is instantiated from config. Released weights are self-describing
-bundles: download a checkpoint and predict anywhere — no training code, no
-training data.
+Released weights are self-describing bundles: download and predict
+anywhere — no training code, no training data.
+
+## Install
+
+```bash
+pip install "solstice-fusion[models] @ git+https://github.com/ORNL-Fusion/solstice.git"
+```
 
 ## Quick start
 
 ```python
-from solstice.hub import load_state_bundle, load_source_bundle
+from solstice import hub
 
-state = load_state_bundle("pepc-diiid-state-v1")
+state = hub.load("pepc-diiid-state-v1")
 fields = state.predict({"ptot": 6e6, "chi": 0.7, "core_fueling": 3e20,
                         "puff_D2": 1e21, "dna": 0.5})
 
-sources = load_source_bundle("pepc-diiid-sources-v1")
-terms = sources.predict(plasma_state, params)
+sources = hub.load("pepc-diiid-sources-v1")
+plasma = {k: fields[k] for k in sources.manifest["variables"]["plasma_features"]}
+terms = sources.predict(plasma, params={"ptot": 6e6, "chi": 0.7,
+                                        "core_fueling": 3e20,
+                                        "puff_D2": 1e21, "dna": 0.5})
 ```
 
-Runnable versions: `examples/predict_state.py` and
-`examples/predict_sources.py`. Inputs are the model's true degrees of
-freedom (the training data has pe = pi and hci = hce, so the models see
-`ptot = pe + pi` and a single `chi`; passing raw asymmetric pairs
-triggers a warning). Requests outside the training parameter box also
-raise a warning (ensemble-based uncertainty estimates are planned).
+Weights download from GitHub Releases on first use and are cached in
+`~/.cache/solstice`. Runnable examples: `examples/predict_state.py`,
+`examples/predict_sources.py`.
+
+Inputs are the models' true degrees of freedom (the training data has
+pe = pi and hci = hce, so the models see `ptot = pe + pi` and a single
+`chi`). Requests outside the training parameter box raise a warning —
+treat those predictions as extrapolations.
 
 ## Released models
 
 Names follow `pepc-{machine}-{task}-v{N}` (PEPC: ORNL Power Exhaust and
 Particle Control group). Architecture: `gnn` — latent-mesh
-encode-process-decode with FiLM conditioning (`mlp_v1` is the
-per-field baseline).
+encode-process-decode with FiLM conditioning. Metrics, provenance, and
+caveats ship inside each bundle (`bundle.json`, `model_card.md`).
+
+| model | task | outputs |
+|---|---|---|
+| `pepc-diiid-state-v1` | params -> plasma | te, ti, ne, na_D1, ua_D1, q_pol, prad |
+| `pepc-diiid-sources-v1` | plasma -> sources | sp, sne, qe, qi, sm |
 
 ## Repository layout
 
 ```
 src/solstice/
-  data/        canonical dataset schema + converters (SOLPS output -> canonical)
-  graphs/      mesh -> graph construction (edges are derived, never stored)
-  models/      registry + architectures (gnn, mlp baseline)
+  data/        dataset schema + converters (SOLPS output -> canonical)
+  graphs/      mesh -> graph construction
+  models/      registry + architectures
   inference/   checkpoint loading, profiling
   hub/         released-model bundles: create / load / predict
   physics/     scalar QoIs from predicted fields
-configs/       YAML model configs
 docs/specs/    data schema and checkpoint bundle — the contracts
 examples/      predict scripts for released models
 ```
@@ -77,7 +86,29 @@ examples/      predict scripts for released models
 
 Training data comes from SOLPS-ITER simulations and is **not** distributed
 with this repository. Converters in `solstice.data.converters` build
-canonical cases from SOLPS run directories.
+canonical cases from SOLPS run directories. The DIII-D configuration
+follows Lore et al., and the released DIII-D models derive from it —
+please cite:
+
+```bibtex
+@article{Lore2023,
+  author  = {J. D. Lore and S. {De Pascuale} and P. Laiu and B. Russo and
+             J.-S. Park and J. M. Park and S. L. Brunton and J. N. Kutz and
+             A. A. Kaptanoglu},
+  title   = {Time-dependent SOLPS-ITER simulations of the tokamak plasma
+             boundary for model predictive control using SINDy},
+  journal = {Nuclear Fusion},
+  volume  = {63},
+  number  = {046015},
+  pages   = {1--12},
+  year    = {2023},
+  doi     = {10.1088/1741-4326/acbe0e}
+}
+```
+
+## Citation
+
+See `CITATION.cff`.
 
 ## License
 

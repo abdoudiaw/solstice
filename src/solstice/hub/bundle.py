@@ -31,19 +31,29 @@ import numpy as np
 
 from solstice.inference.checkpoint import BUNDLE_VERSION
 
-# input feature engineering recorded in bundles (matches the notebooks)
+# input feature engineering recorded in bundles (matches the notebooks):
+# "sum" adds the parts (ptot = pe + pi); "first" takes one of identical
+# channels (chi = hci = hce).
 DEFAULT_TRANSFORM = {
     "log_inputs": ["core_fueling", "puff_D2", "puff_Ne"],
-    "merged": {"ptot": ["pe", "pi"], "chi": ["hci", "hce"]},
+    "merged": {"ptot": {"op": "sum", "of": ["pe", "pi"]},
+               "chi": {"op": "first", "of": ["hci", "hce"]}},
 }
 
 
 def _engineer_inputs(raw: dict, transform: dict, names: list[str],
                      x_mean: np.ndarray, x_std: np.ndarray) -> np.ndarray:
     feats = dict(raw)
-    for new, parts in transform.get("merged", {}).items():
+    for new, spec in transform.get("merged", {}).items():
+        parts = spec["of"] if isinstance(spec, dict) else spec
+        op = spec.get("op", "sum") if isinstance(spec, dict) else "sum"
         if all(p in feats for p in parts):
-            feats[new] = sum(float(feats.pop(p)) for p in parts)
+            vals = [float(feats.pop(p)) for p in parts]
+            feats[new] = sum(vals) if op == "sum" else vals[0]
+    # aliases: trained feature name -> canonical raw name (legacy checkpoints)
+    for trained, canonical in transform.get("aliases", {}).items():
+        if trained not in feats and canonical in feats:
+            feats[trained] = feats[canonical]
     x = np.array([float(feats[n]) for n in names], dtype=np.float64)
     for j, n in enumerate(names):
         if n in transform.get("log_inputs", ()):

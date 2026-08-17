@@ -26,7 +26,9 @@ def test_mlp_bundle_roundtrip(tmp_path, tiny_mesh):
         "cell_mean": np.zeros(n_cells), "cell_std": np.ones(n_cells),
         "log10": True,
         "inputs": ["chi", "core_fueling", "dna", "ptot", "puff_D2"],
-        "x_mean": np.zeros(5), "x_std": np.ones(5),
+        # realistic scalers so standardized features are O(1)
+        "x_mean": np.array([0.7, 20.0, 0.5, 2e6, 21.0]),
+        "x_std": np.array([0.1, 0.3, 0.3, 1e6, 0.5]),
     }
     ptp = tmp_path / "diiid-test-state-mlp-te.pt"
     torch.save(pt, ptp)

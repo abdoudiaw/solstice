@@ -133,6 +133,11 @@ def build_ensemble_store(
     tq = np.stack(target_rows)
     ds["q_inner_target"] = (("case", "target_iy"), tq[:, 0, :].astype(np.float32))
     ds["q_outer_target"] = (("case", "target_iy"), tq[:, 1, :].astype(np.float32))
+    if "prad" in field_names:
+        j = field_names.index("prad")
+        vol = mesh["cell_vol"].values
+        ds["prad_tot"] = ("case", (fields_arr[:, j, :] * vol).sum(axis=1))
+        ds["prad_tot"].attrs["units"] = "W"
     for name, values in qc_flags(field_names, fields_arr).items():
         ds[name] = ("case", values)
     ds.attrs.update(

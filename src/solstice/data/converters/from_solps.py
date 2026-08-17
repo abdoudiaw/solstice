@@ -270,6 +270,18 @@ def read_case_sources(bal: dict, nx: int, ny: int, run_dir: str | None = None) -
         else:
             v = np.zeros(nx * ny)
         out[vn] = v / EV if vn.startswith("t") else v
+
+    # radiated power density [W/m^3]: EIRENE neutral radiation terms
+    # (calc_prad.m convention: these enter Prad with a minus sign). The
+    # fluid-species rqrad/rqbrm part needs the b2frates machinery
+    # (Matlab-only today) and matters once impurities are seeded.
+    rad_w = np.zeros(nx * ny)
+    if neut is not None:
+        for vn in ("eneutrad", "emolrad", "eionrad"):
+            if vn in neut:
+                rad_w = rad_w - np.asarray(neut[vn]).sum(axis=-1).reshape(-1)
+    vol = _cells(bal["vol"], nx, ny)
+    out["prad"] = np.where(vol > 0, rad_w / vol, 0.0)
     return out
 
 

@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use SOLSTICE or its released models, please cite it as below."
+title: "SOLSTICE: Scrape-Off Layer Surrogate Training, Inference & Coupling Ecosystem"
+authors:
+  - family-names: Diaw
+    given-names: Abdourahmane
+    affiliation: "Oak Ridge National Laboratory"
+repository-code: "https://github.com/ORNL-Fusion/solstice"
+license: Apache-2.0
+type: software

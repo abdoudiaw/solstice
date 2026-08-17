@@ -12,27 +12,44 @@
 # =========================================================================================
 # Authors: Abdourahmane (Abdou) Diaw - diawa@ornl.gov
 # SPDX-License-Identifier: Apache-2.0
-"""Named released weights, torch.hub-style. Names follow the checkpoint spec:
-{machine}-{regime}-{task}-{arch}[-mini]-v{N}."""
+"""Released models. Names follow pepc-{machine}-{task}-v{N}; weights are
+downloaded from GitHub Releases on first use and cached locally."""
 
 from __future__ import annotations
 
-# name -> huggingface repo id (populated at first release)
-RELEASES: dict[str, str] = {}
+import os
+import zipfile
+from pathlib import Path
+
+# release name -> (git tag, asset filename)
+RELEASES: dict[str, tuple[str, str]] = {
+    "pepc-diiid-state-v1": ("v0.1.0", "pepc-diiid-state-v1.zip"),
+    "pepc-diiid-sources-v1": ("v0.1.0", "pepc-diiid-sources-v1.zip"),
+}
+_RELEASE_URL = "https://github.com/ORNL-Fusion/solstice/releases/download/{tag}/{asset}"
+_CACHE = Path(os.environ.get("SOLSTICE_CACHE", Path.home() / ".cache" / "solstice"))
 
 
 def load(name: str):
-    """Download a released bundle by name and return a ready ModelInterface."""
+    """Download (once) and load a released model by name."""
     from solstice.inference import load_checkpoint
 
-    try:
-        repo_id = RELEASES[name]
-    except KeyError:
-        raise KeyError(f"unknown release {name!r}; available: {sorted(RELEASES)}") from None
-    from huggingface_hub import snapshot_download
+    if name not in RELEASES:
+        raise KeyError(f"unknown release {name!r}; available: {sorted(RELEASES)}")
+    bundle_dir = _CACHE / name
+    if not (bundle_dir / "bundle.json").exists():
+        tag, asset = RELEASES[name]
+        url = _RELEASE_URL.format(tag=tag, asset=asset)
+        _CACHE.mkdir(parents=True, exist_ok=True)
+        zpath = _CACHE / asset
+        import urllib.request
+        print(f"downloading {name} from {url}")
+        urllib.request.urlretrieve(url, zpath)
+        with zipfile.ZipFile(zpath) as z:
+            z.extractall(_CACHE)
+        zpath.unlink()
+    return load_checkpoint(bundle_dir)
 
-    from solstice.hub.bundle import load_state_bundle
-    return load_state_bundle(snapshot_download(repo_id))
 
 from solstice.hub.bundle import (create_source_bundle, create_state_bundle,  # noqa: E402,F401
                                  load_source_bundle, load_state_bundle)

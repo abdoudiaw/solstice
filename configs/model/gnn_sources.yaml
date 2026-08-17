@@ -10,10 +10,10 @@
 # public access to these results in accordance with the DOE Public Access Plan
 # (http://energy.gov/downloads/doe-public-access-plan).
 # =========================================================================================
-# Source model (plasma -> sources), GNN baseline.
+# Source model (plasma -> sources), SOLSTICE GNN.
 task: sources
 model:
-  class: gnn_v1        # registry name
+  class: gnn
   config:
     hidden_dim: 128
     num_layers: 6

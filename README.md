@@ -21,13 +21,30 @@ training data.
 ## Quick start
 
 ```python
-import solstice
+from solstice.hub import load_state_bundle, load_source_bundle
 
-model = solstice.hub.load("diiid-lmode-sources-gnn-v1")
-sources = model.predict(plasma_state)
+state = load_state_bundle("pepc-diiid-state-v1")
+fields = state.predict({"pe": 3e6, "pi": 3e6, "core_fueling": 3e20,
+                        "puff_D2": 1e21, "dna": 0.5, "hci": 0.7, "hce": 0.7})
+
+sources = load_source_bundle("pepc-diiid-sources-v1")
+terms = sources.predict(plasma_state, params)
 ```
 
-See `examples/quickstart.ipynb` (runs on Colab).
+Runnable versions: `examples/predict_state.py` and
+`examples/predict_sources.py`. Training notebooks (Colab):
+`examples/quickstart_diiid_state_gnn.ipynb` (state task) and
+`examples/quickstart_diiid_sources_gnn.ipynb` (sources / EIRENE
+replacement); `examples/quickstart_diiid_state.ipynb` is the MLP
+baseline. Requests outside the training parameter box raise a warning
+(ensemble-based uncertainty estimates are planned).
+
+## Released models
+
+Names follow `pepc-{machine}-{task}-v{N}` (PEPC: ORNL Power Exhaust and
+Particle Control group). Current architecture: `gnn` — latent-mesh
+encode-process-decode with FiLM conditioning (`mlp_v1` is the baseline;
+`gnn_v1`, the native-mesh conditional GNN, is retired but loadable).
 
 ## Repository layout
 

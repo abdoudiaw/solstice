@@ -14,8 +14,9 @@
 # SPDX-License-Identifier: Apache-2.0
 """SOLPS run directory -> canonical case (docs/specs/data_schema.md).
 
-All raw-file parsing and index conventions come from the ORNL
-SOLPS-routines package (solps_routines.readers): b2fgmtry corners and
+All raw SOLPS file parsing is imported from the SOLPS-routines package
+(`solps_routines.readers`) by Jeremy Lore (ORNL) — used as an external
+library, no code copied here. It provides: b2fgmtry corners and
 neighbor maps (leftix/bottomix handle the poloidal cuts exactly as B2
 does), region labels and their semantics (geo["region"]/region_ids),
 and balance.nc contents. Nothing is re-derived here.
@@ -61,8 +62,8 @@ def _readers():
         from solps_routines import readers
     except ImportError as err:
         raise ImportError(
-            "solps_routines (ORNL SOLPS-routines) is required for SOLPS conversion; "
-            "add its src/ to PYTHONPATH"
+            "solps_routines is required for SOLPS conversion — the SOLPS-routines "
+            "package by Jeremy Lore (ORNL); add its src/ to PYTHONPATH"
         ) from err
     return readers
 

@@ -15,7 +15,8 @@
 """SOLPS run directory -> canonical case (docs/specs/data_schema.md).
 
 All raw SOLPS file parsing is imported from the SOLPS-routines package
-(`solps_routines.readers`) by Jeremy Lore (ORNL) — used as an external
+(`solps_routines.readers`) by Jeremy Lore (ORNL),
+https://github.com/ORNL-Fusion/SOLPS-routines — used as an external
 library, no code copied here. It provides: b2fgmtry corners and
 neighbor maps (leftix/bottomix handle the poloidal cuts exactly as B2
 does), region labels and their semantics (geo["region"]/region_ids),
